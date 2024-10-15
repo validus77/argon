@@ -48,6 +48,7 @@ module argon_riscv_cpu(
     logic           is_branch;
     logic [2:0]     branch_type;
     logic [31:0]    store_data;
+    logic [2:0]     load_store_type;
 
     // EX -> LSU
     logic           ex_is_reg_write;
@@ -57,6 +58,7 @@ module argon_riscv_cpu(
     logic [4:0]     ex_rd_id;
     logic [31:0]    ex_mem_data;
     logic [31:0]    ex_reg_data;
+    logic [2:0]     ex_load_store_type;
 
 
     instruction_fetch ins_f(
@@ -85,6 +87,7 @@ module argon_riscv_cpu(
         .o_is_reg_write(is_reg_write),
         .o_is_load(is_load),
         .o_is_store(is_store),
+        .o_load_store_type(load_store_type),
         .o_is_jump(is_jump),
         .o_jump_address(jump_address),
         .o_is_branch(is_branch),
@@ -105,15 +108,17 @@ module argon_riscv_cpu(
         .i_is_branch(is_branch),
         .i_branch_type(branch_type),
         .i_store_data(store_data),
+        .i_load_store_type(load_store_type),
         .o_branch_enable(branch_enable),
         .o_branch_address(branch_address),
         .o_is_reg_write(ex_is_reg_write),
         .o_is_mem_read(ex_is_mem_read),
         .o_is_mem_write(ex_is_mem_write),
         .o_mem_address(ex_mem_address),
-        .o_rd_id(ex_rd),
+        .o_rd_id(ex_rd_id),
         .o_mem_data(ex_mem_data),
-        .o_reg_data(ex_reg_data)
+        .o_reg_data(ex_reg_data),
+        .o_load_store_type(ex_load_store_type)
     );
 
     load_store_unit lsu(
@@ -123,9 +128,10 @@ module argon_riscv_cpu(
         .i_is_mem_read(ex_is_mem_read),
         .i_is_mem_write(ex_is_mem_write),
         .i_mem_address(ex_mem_address),
-        .i_rd_id(ex_rd),
+        .i_rd_id(ex_rd_id),
         .i_mem_data(ex_mem_data),
         .i_reg_data(ex_reg_data),
+        .i_load_store_type(ex_load_store_type),
         .i_instruction_valid(instruction_valid),
         .wishbone_bus(lsu_wishbone_master),
         .o_stall(stall),

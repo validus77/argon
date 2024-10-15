@@ -29,7 +29,7 @@ always_comb begin
             o_result = (i_op1 < i_op2) ? 32'b1 : 32'b0;
         end
         ALU_XOR: begin
-            o_result <= i_op1 ^ i_op2;
+            o_result = i_op1 ^ i_op2;
         end
         ALU_SRL: begin
             o_result = i_op1 >> i_op2[4:0];

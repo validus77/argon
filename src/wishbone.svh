@@ -24,12 +24,14 @@ interface wishbone_if (
         output ack, data_out                                          
     );
 
-    task automatic sim_read(input logic [31:0] addr, output logic [31:0] data);
+    task automatic sim_read(input logic [31:0] addr, 
+                            input logic [3:0] sel = 4'b1111, 
+                            output logic [31:0] data);
         begin
             @(negedge clk);
             address      <= addr;
             write_enable <= 1'b0;
-            select       <= 4'b1111;  // Assuming 32-bit read
+            select       <= sel;
             strobe       <= 1'b1;
             cycle        <= 1'b1;
 
@@ -48,13 +50,15 @@ interface wishbone_if (
         end
     endtask
 
-    task automatic sim_write(input logic [31:0] addr, input logic [31:0] data);
+    task automatic sim_write(input logic [31:0] addr, 
+                             input logic [3:0] sel = 4'b1111,  
+                             input logic [31:0] data);
         begin
             @(negedge clk);
             address      <= addr;
             data_in      <= data;
             write_enable <= 1'b1;
-            select       <= 4'b1111;  // Assuming 32-bit write
+            select       <= sel;
             strobe       <= 1'b1;
             cycle        <= 1'b1;
 

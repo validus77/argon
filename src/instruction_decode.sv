@@ -22,6 +22,7 @@ module instruction_decode (
     output logic        o_is_reg_write,
     output logic        o_is_load,
     output logic        o_is_store,
+    output logic [2:0]  o_load_store_type,
     output logic        o_is_jump,
     output logic [31:0] o_jump_address,
     output logic        o_is_branch,
@@ -74,6 +75,7 @@ always_comb begin
     o_is_reg_write = 1'b0;
     o_is_load = 1'b0;
     o_is_store = 1'b0;
+    o_load_store_type = 3'd0;
     o_is_jump = 1'b0;
     o_jump_address = 32'd0;
     o_is_branch = 1'b0;
@@ -103,6 +105,7 @@ always_comb begin
             o_alu_op1 = i_rs1_data;
             o_alu_op2 = Iimm;
             o_is_load = 1'b1;
+            o_load_store_type = funct3;
             o_is_reg_write = 1'b1;
         end
 
@@ -111,6 +114,7 @@ always_comb begin
              o_alu_op1 = i_rs1_data;
              o_alu_op2 = Simm;
              o_store_data = i_rs2_data;
+             o_load_store_type = funct3;
              o_is_store = 1'b1;
         end
 
@@ -153,6 +157,8 @@ always_comb begin
             o_jump_address = i_rs1_data + Iimm;
             o_is_reg_write = 1'b1;
             o_is_jump = 1'b1;
+        end
+        default: begin
         end
 
     endcase

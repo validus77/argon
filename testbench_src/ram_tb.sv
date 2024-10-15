@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+`include "wishbone.svh"
 
 module ram_tb;
 
@@ -7,7 +8,8 @@ module ram_tb;
     logic reset;
 
     // Instantiate the Wishbone interface
-    wishbone_if wishbone_m();
+    logic clk;
+    wishbone_if wishbone_m(.clk(clk), .rst(reset));
 
 
 
@@ -36,18 +38,25 @@ module ram_tb;
     initial begin
         @(negedge reset);
         // WTIRE data to the RAM
-        wishbone_m.sim_write(32'h00000000, 32'hA0001234);
+        wishbone_m.sim_write(32'h00000000,, 32'hA0001234);
         #20;
-        wishbone_m.sim_read(32'h00000000, read_data);
+        wishbone_m.sim_read(32'h00000000,, read_data);
         #20;
         $display("READ(h00000000): 0x%0h, expect 0xa0001234", read_data);
 
         // WTIRE data to the RAM
-        wishbone_m.sim_write(32'h00000256, 32'hDEADBEEF);
+        wishbone_m.sim_write(32'h00000256,,32'hDEADBEEF);
         #20;
-        wishbone_m.sim_read(32'h00000256, read_data);
+        wishbone_m.sim_read(32'h00000256,, read_data);
         #20;
         $display("READ(h00000256): 0x%0h, expect 0xDEADBEEF", read_data);
+        
+        // WTIRE half word to ram data to the RAM (overwriign only MSB half word)
+        wishbone_m.sim_write(32'h00000000,4'b1100,32'hCAFEBABE);
+        #20;
+        wishbone_m.sim_read(32'h00000000,, read_data);
+        #20;
+        $display("READ(h00000256): 0x%0h, expect 0xCAFE1234", read_data);
         $finish;
     end
 

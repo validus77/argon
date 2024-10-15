@@ -15,6 +15,7 @@ module execution (
     input logic        i_is_branch,
     input logic [2:0]  i_branch_type,
     input logic [31:0] i_store_data,
+    input logic [2:0]  i_load_store_type,
 
     // EX -> IF
     output logic        o_branch_enable,
@@ -27,7 +28,8 @@ module execution (
     output logic [31:0] o_mem_address,
     output logic [4:0]  o_rd_id,
     output logic [31:0] o_mem_data,
-    output logic [31:0] o_reg_data
+    output logic [31:0] o_reg_data,
+    output logic [2:0]  o_load_store_type
 );
     typedef enum logic [2:0] {
     BEQ     = 3'b000,
@@ -63,6 +65,7 @@ module execution (
         o_rd_id             = i_rd_id;
         o_mem_data          = 32'd0;
         o_reg_data          = 32'd0;
+        o_load_store_type   = i_load_store_type;
 
         // ALU flags
         zero_flag = (alu_result == 0);
