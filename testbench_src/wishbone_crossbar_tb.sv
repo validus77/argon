@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`include "wishbone.svh"
 
 module wishbone_crossbar_tb;
 
@@ -7,11 +8,11 @@ module wishbone_crossbar_tb;
     logic reset;
 
     // Instantiate the Wishbone interfaces
-    wishbone_if wb_m0_if();
-    wishbone_if wb_m1_if();
-    wishbone_if wb_rom_if();
-    wishbone_if wb_ram_if();
-     wishbone_if wb_uart_if();
+    wishbone_if wb_m0_if(.clk(clk), .rst(reset));
+    wishbone_if wb_m1_if(.clk(clk), .rst(reset));
+    wishbone_if wb_rom_if(.clk(clk), .rst(reset));
+    wishbone_if wb_ram_if(.clk(clk), .rst(reset));
+    wishbone_if wb_uart_if(.clk(clk), .rst(reset));
 
     // Declare virtual interfaces
     virtual wishbone_if wb_m0_vif;
@@ -79,16 +80,16 @@ module wishbone_crossbar_tb;
             begin
                 // Read from ROM
                 $display("Master 0: Reading from ROM at address 0x00000000");
-                wishbone_master_read(wb_m0_vif, 32'h00000000, read_data_m0);
+                wb_m0_vif.sim_read(32'h00000000,, read_data_m0);
                 $display("Master 0: Read data 0x%0h from ROM", read_data_m0);
 
                 // Write to RAM
                 $display("Master 0: Writing 0xDEADBEEF to RAM at address 0x80000000");
-                wishbone_master_write(wb_m0_vif, 32'h80000000, 32'hDEADBEEF);
+                wb_m0_vif.sim_write(32'h80000000,, 32'hDEADBEEF);
 
                 // Read back from RAM
                 $display("Master 0: Reading from RAM at address 0x80000000");
-                wishbone_master_read(wb_m0_vif, 32'h80000000, read_data_m0);
+                wb_m0_vif.sim_read(32'h80000000,, read_data_m0);
                 $display("Master 0: Read data 0x%0h from RAM", read_data_m0);
 
                 // Verify data
@@ -105,25 +106,25 @@ module wishbone_crossbar_tb;
                 #10;
 
                 // Write to RAM
-                $display("Master 1: Writing 0xCAFEBABE to RAM at address 0x80000004");
-                wishbone_master_write(wb_m1_vif, 32'h80000012, 32'hCAFEBABE);
+                $display("Master 1: Writing 0xCAFEBABE to RAM at address 0x80000012");
+                wb_m1_vif.sim_write(32'h80000012,, 32'hCAFEBABE);
                 // Read back from RAM
-                //$display("Master 1: Reading from RAM at address 0x80000012");
-                //wishbone_master_read(wb_m1_vif, 32'h80000012, read_data_m1);
-                //$display("Master 1: Read data 0x%0h from RAM", read_data_m1);
+                $display("Master 1: Reading from RAM at address 0x80000012");
+                wb_m1_vif.sim_read(32'h80000012,, read_data_m1);
+                $display("Master 1: Read data 0x%0h from RAM", read_data_m1);
 
                 // Verify data (IF never acces RAM, but look at this latter)
-                //if (read_data_m1 == 32'hCAFEBABE) begin
-               //     $display("Master 1: RAM read/write successful.");
-               // end else begin
-               //     $error("Master 1: RAM read/write failed.");
-               // end
+                if (read_data_m1 == 32'hCAFEBABE) begin
+                    $display("Master 1: RAM read/write successful.");
+                end else begin
+                    $error("Master 1: RAM read/write failed.");
+                end
 
                 // Attempt to read from ROM (should be delayed if Master 0 is active)
-                //$display("Master 1: Reading from ROM at address 0x00000004");
-                //#100;
-                //wishbone_master_read(wb_m1_vif, 32'h00000004, read_data_m1);
-                // $display("Master 1: Read data 0x%0h from ROM", read_data_m1);
+                $display("Master 1: Reading from ROM at address 0x00000004");
+                #100;
+                wb_m1_vif.sim_read(32'h00000004,, read_data_m1);
+                $display("Master 1: Read data 0x%0h from ROM", read_data_m1);
             end
         join
 
@@ -131,61 +132,4 @@ module wishbone_crossbar_tb;
         $display("Testbench completed.");
         $finish;
     end
-
-    // Task to perform Wishbone master read operation
-    task wishbone_master_read(
-        input virtual wishbone_if wb_if,
-        input logic [31:0] addr,
-        output logic [31:0] data
-    );
-        begin
-            @(negedge clk);
-            wb_if.master.address      <= addr;
-            wb_if.master.write_enable <= 1'b0;
-            wb_if.master.select       <= 4'b1111;  // Assuming 32-bit read
-            wb_if.master.strobe       <= 1'b1;
-            wb_if.master.cycle        <= 1'b1;
-
-            // Wait for acknowledge
-            wait (wb_if.master.ack == 1'b1);
-
-            // Read data
-            data = wb_if.master.data_out;
-
-            // Deassert signals
-            @(negedge clk);
-            wb_if.master.strobe       <= 1'b0;
-            wb_if.master.cycle        <= 1'b0;
-            wb_if.master.address      <= 32'd0;
-        end
-    endtask
-
-    // Task to perform Wishbone master write operation
-    task wishbone_master_write(
-        input virtual wishbone_if wb_if,
-        input logic [31:0] addr,
-        input logic [31:0] data
-    );
-        begin
-            @(negedge clk);
-            wb_if.master.address      <= addr;
-            wb_if.master.data_in      <= data;
-            wb_if.master.write_enable <= 1'b1;
-            wb_if.master.select       <= 4'b1111;  // Assuming 32-bit write
-            wb_if.master.strobe       <= 1'b1;
-            wb_if.master.cycle        <= 1'b1;
-
-            // Wait for acknowledge
-            wait (wb_if.master.ack == 1'b1);
-
-            // Deassert signals
-            @(negedge clk);
-            wb_if.master.strobe       <= 1'b0;
-            wb_if.master.cycle        <= 1'b0;
-            wb_if.master.write_enable <= 1'b0;
-            wb_if.master.address      <= 32'd0;
-            wb_if.master.data_in      <= 32'd0;
-        end
-    endtask
-
 endmodule

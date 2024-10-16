@@ -2,9 +2,10 @@
     .globl _start            # Declare _start as a global symbol
     .align 2                 # Ensure proper alignment
 
+
 _start:
-    call main                # Call the C main function
-    j _halt                  # Jump to halt (infinite loop after main)
+    jal ra, main             # Jump and link to main (call main)
+    j _halt                  # Jump to halt
 
 _halt:
     j _halt                  # Infinite loop to stop the CPU

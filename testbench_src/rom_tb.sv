@@ -7,7 +7,7 @@ module rom_tb;
     logic reset;
 
     // Instantiate the Wishbone interface
-    wishbone_if wishbone_m();
+    wishbone_if wishbone_m(.clk(clk), .rst(reset));
 
 
 
@@ -36,11 +36,11 @@ module rom_tb;
     initial begin
         // Wait for reset deassertion
         @(negedge reset);
-        wishbone_m.sim_read(32'h00000000, read_data);
+        wishbone_m.sim_read(32'h00000000,, read_data);
         #20;
         $display("READ(h00000000): 0x%0h", read_data);
 
-        wishbone_m.sim_read(32'h00000004, read_data);
+        wishbone_m.sim_read(32'h00000004,, read_data);
         #20;
         $display("READ(h00000004): 0x%0h", read_data);
 

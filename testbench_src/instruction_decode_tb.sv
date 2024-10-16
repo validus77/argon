@@ -2,6 +2,7 @@
 
 module instruction_decode_tb;
 
+
     // Inputs to the DUT
     logic [31:0] i_pc;
     logic [31:0] i_instruction;

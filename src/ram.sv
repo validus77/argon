@@ -8,7 +8,7 @@ module ram (
 
     // Data memory - BRAM
     localparam SIZE = 1024 * 32; // 32KB RAM
-    reg [31:0] memory [0:SIZE - 1]; 
+    (* ram_style = "block" *) reg [31:0] memory [0:SIZE - 1]; 
 
     // Compute the word address
     logic [$clog2(SIZE)-1:0] word_address;

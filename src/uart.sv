@@ -208,10 +208,10 @@ module uart_wishbone (
 
     // uart address 
     typedef enum logic [31:0] {
-        TDR_ADDR = 32'h10000000,   // Transmit Data Register
-        RDR_ADDR = 32'h10000004,   // Receive Data Register
-        SR_ADDR = 32'h10000008,    // Status Register
-        CR_ADDR = 32'h1000000C     // Control Register (Not used right now)
+        TDR_ADDR    = 32'h10000000,   // Transmit Data Register
+        RDR_ADDR    = 32'h10000004,   // Receive Data Register
+        SR_ADDR     = 32'h10000008,    // Status Register
+        CR_ADDR     = 32'h1000000C     // Control Register (Not used right now)
     } uart_reg_addr_t;
 
     wire uart_reg_addr_t uart_addr = uart_reg_addr_t'(wishbone.address);
@@ -284,7 +284,6 @@ module uart_wishbone (
     // Wishbone Write Logic
     always_ff @(posedge clk) begin
         if(reset) begin
-            rdr_reg <= 8'd0;
             tx_data <= 8'd0;
         end else begin
              if (wishbone.cycle && 
@@ -309,6 +308,7 @@ module uart_wishbone (
     if (reset) begin
         rx_ready <= 1'b0;
         overflow_error <= 1'b0;
+        rdr_reg <= 8'd0;
     end else begin
         if (rx_available) begin
             if (!rx_ready) begin

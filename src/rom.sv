@@ -8,13 +8,15 @@ module rom(
 
     localparam SIZE = 1024 * 16; // 16KB ROM 
     // Instruction memory - BRAM
-    reg [31:0] memory [0:SIZE-1];
-
+    (* rom_style = "block" *) reg [31:0] memory [0:SIZE-1];
+    
     initial begin
-        //$readmemh("test_rom.hex", memory);  // For simulation or FPGA memory init
-        memory[0] = 32'h00000093; // nop instruction
-        memory[1] = 32'h0000DEAD; // nop instruction
-        memory[2] = 32'h00000093; // nop instruction
+        $readmemh("D:/Dev/Dump/hello_world.hex", memory);  // For simulation or FPGA memory init
+        #10;  // Wait for some time to ensure memory is loaded
+        $display("Memory[0]: %h", memory[0]);
+        $display("Memory[1]: %h", memory[1]);
+        $display("Memory[2]: %h", memory[2]);
+        $display("Memory[3]: %h", memory[3]);
     end
 
     // Compute the word address

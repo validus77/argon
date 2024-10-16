@@ -77,13 +77,12 @@ always_ff @(posedge clk) begin
         case (lsu_state)
             READY: begin
                 if(i_instruction_valid) begin
+                    o_stall <= 1'b1;
                     reg_data <= i_reg_data;
                     load_store_type <= load_store_type_t'(i_load_store_type);
                     if(i_is_mem_read == 1'b1) begin
-                        o_stall <= 1'b1;
                         lsu_state <= READ_MEM;
                     end else if (i_is_mem_write) begin
-                        o_stall <= 1'b1;
                         lsu_state <= WRITE_MEM;
                     end else begin
                         lsu_state <= DONE_MEM_ACCESS;
@@ -159,7 +158,6 @@ always_ff @(posedge clk) begin
             end
 
             WRITE_MEM: begin
-                o_stall <= 1'b1;
                 case(bus_state)
                     BUS_READY: begin
                         case(load_store_type)
