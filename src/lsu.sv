@@ -54,13 +54,42 @@ load_store_type_t load_store_type;
 lsu_state_t     lsu_state;
 bus_state_t     bus_state;
 logic [31:0]    reg_data;
+logic [31:0]    aligned_data;
+
+always_comb begin
+o_stall = (i_is_mem_read || i_is_mem_write) && ~wishbone_bus.ack;
+
+aligned_data = 32'd0;
+case(load_store_type)
+    WORD: begin
+        aligned_data = i_mem_data;
+    end
+    HALF_WORD: begin
+        case(i_mem_address[1:0])
+            2'b00: aligned_data[15:0]  = i_mem_data[15:0];                            
+            2'b10: aligned_data[31:24] = i_mem_data[15:0];                      
+                                   
+        endcase
+    end
+    BYTE: begin
+        case(i_mem_address[1:0]) 
+            2'b00: aligned_data[7:0]   = i_mem_data[7:0];
+            2'b01: aligned_data[15:8]  = i_mem_data[7:0];
+            2'b10: aligned_data[23:16] = i_mem_data[7:0];
+            2'b11: aligned_data[31:24] = i_mem_data[7:0];
+            default: aligned_data = i_mem_data;
+        endcase
+    end
+    default: aligned_data = 32'd0;
+endcase
+
+end
 
 always_ff @(posedge clk) begin
     if(reset) begin
         o_write_enable <= 1'b0;
         o_write_address <= 5'd0;
         o_write_data <= 32'd0;
-        o_stall <= 1'b0;
         lsu_state <= READY;
         bus_state <= BUS_READY;
         reg_data <= 32'd0;
@@ -77,14 +106,13 @@ always_ff @(posedge clk) begin
         case (lsu_state)
             READY: begin
                 if(i_instruction_valid) begin
-                    o_stall <= 1'b1;
-                    reg_data <= i_reg_data;
                     load_store_type <= load_store_type_t'(i_load_store_type);
                     if(i_is_mem_read == 1'b1) begin
                         lsu_state <= READ_MEM;
                     end else if (i_is_mem_write) begin
                         lsu_state <= WRITE_MEM;
                     end else begin
+                        reg_data <= i_reg_data;
                         lsu_state <= DONE_MEM_ACCESS;
                     end
                 end
@@ -95,27 +123,29 @@ always_ff @(posedge clk) begin
                     BUS_READY: begin
                         wishbone_bus.strobe <= 1'b1;
                         wishbone_bus.cycle <= 1'b1;
+                        wishbone_bus.write_enable<= 1'b0;
                         wishbone_bus.address <= i_mem_address;
+                        wishbone_bus.select <= 4'b1111;
                         bus_state <= BUS_BUSY;
                     end
 
                     BUS_BUSY: begin 
                         if(wishbone_bus.ack == 1'b1) begin
                             case(load_store_type)
-                                WORD: begin
-                                    reg_data <= wishbone_bus.data_out;
-                                end
-                                HALF_WORD: begin
-                                    /*  look at the lower 2 bits to see what part of the word we want
+                             /*  look at the lower 2 bits to see what part of the word we want
                                         HEX addr 0x000, (bin 0000 0000 0000): the word arrd is [31:2] 0000 0000 00, Word 0 and byte offset 00
                                         HEX addr 0x001, (bin 0000 0000 0001): the word arrd is [31:2] 0000 0000 00, Word 0 and byte offset 01
                                         HEX addr 0x002, (bin 0000 0000 0010): the word arrd is [31:2] 0000 0000 00, Word 0 and byte offset 10
                                         HEX addr 0x003, (bin 0000 0000 0011): the word arrd is [31:2] 0000 0000 00, Word 0 and byte offset 11
                                         HEX addr 0x004, (bin 0000 0000 0100): the word arrd is [31:2] 0000 0000 01, Word 1 and byte offset 00
-                                     */
+                            */
+                                WORD: begin
+                                    reg_data <= wishbone_bus.data_out;
+                                end
+                                HALF_WORD: begin
                                     case(i_mem_address[1:0]) 
-                                        2'b00:      reg_data <= {{16{wishbone_bus.data_out[15]}}, wishbone_bus.data_out[15:0]};
-                                        2'b10:      reg_data <= {{16{wishbone_bus.data_out[31]}}, wishbone_bus.data_out[31:16]};
+                                        2'b00:      reg_data <= {{16{wishbone_bus.data_out[31]}}, wishbone_bus.data_out[15:0]};
+                                        2'b10:      reg_data <= {{16{wishbone_bus.data_out[15]}}, wishbone_bus.data_out[31:16]};
                                         default:    reg_data <= 32'd0; // Misaligned (EXCEPTION)
                                     endcase
                                 end
@@ -131,7 +161,7 @@ always_ff @(posedge clk) begin
                                         2'b00: reg_data <= {{24{wishbone_bus.data_out[7]}}, wishbone_bus.data_out[7:0]};
                                         2'b01: reg_data <= {{24{wishbone_bus.data_out[15]}}, wishbone_bus.data_out[15:8]};
                                         2'b10: reg_data <= {{24{wishbone_bus.data_out[23]}}, wishbone_bus.data_out[23:16]};
-                                        2'b11: reg_data <= {{24{wishbone_bus.data_out[31]}}, wishbone_bus.data_out[31:24]};
+                                        2'b11: reg_data <= {{24{wishbone_bus.data_out[23]}}, wishbone_bus.data_out[23:16]};
                                         default: reg_data <= 32'd0;
                                     endcase
                                     end
@@ -146,6 +176,7 @@ always_ff @(posedge clk) begin
                                 end
                                 default: reg_data <= wishbone_bus.data_out;
                             endcase
+
                             wishbone_bus.strobe <= 1'b0;
                             wishbone_bus.cycle <= 1'b0;
                             wishbone_bus.write_enable<= 1'b0;
@@ -161,32 +192,30 @@ always_ff @(posedge clk) begin
                 case(bus_state)
                     BUS_READY: begin
                         case(load_store_type)
-                                WORD: begin
-                                    wishbone_bus.select <= 4'b1111;
-                                end
-                                HALF_WORD: begin
-                                    case(i_mem_address[1:0])
-                                        2'b00:      wishbone_bus.select = 4'b0011;
-                                        2'b10:      wishbone_bus.select = 4'b1100;
-                                        default:    wishbone_bus.select = 4'b0000; // Misaligned
-                                    endcase
-                                end
-                                BYTE: begin
-                                    case(i_mem_address[1:0])
-                                        2'b00:      wishbone_bus.select = 4'b0001;
-                                        2'b01:      wishbone_bus.select = 4'b0010;
-                                        2'b10:      wishbone_bus.select = 4'b0100;
-                                        2'b11:      wishbone_bus.select = 4'b1000;
-                                        default:    wishbone_bus.select = 4'b0000;
-                                    endcase
-                                end
-                                default: wishbone_bus.select <= 4'b1111;
-                            endcase
+                            WORD:  wishbone_bus.select <= 4'b1111;
+                            HALF_WORD: begin
+                                case(i_mem_address[1:0])
+                                    2'b00: wishbone_bus.select    <= 4'b0011;  
+                                    2'b10: wishbone_bus.select    <= 4'b1100;  
+                                    default:  wishbone_bus.select <= 4'b0000; // Misaligned
+                                endcase
+                            end
+                            BYTE: begin
+                                case(i_mem_address[1:0])
+                                    2'b00:  wishbone_bus.select  <= 4'b0001;     
+                                    2'b01: wishbone_bus.select   <=  4'b0010;      
+                                    2'b10: wishbone_bus.select   <=  4'b0100;
+                                    2'b11: wishbone_bus.select   <=  4'b1000;        
+                                    default: wishbone_bus.select <= 4'b0000;    
+                                endcase
+                            end
+                            default: wishbone_bus.select <= 4'b1111;
+                        endcase
                         wishbone_bus.strobe <= 1'b1;
                         wishbone_bus.cycle <= 1'b1;
                         wishbone_bus.write_enable<= 1'b1;
                         wishbone_bus.address <= i_mem_address;
-                        wishbone_bus.data_in <= i_mem_data;
+                        wishbone_bus.data_in <= aligned_data;
                         bus_state <= BUS_BUSY;
                     end
 
@@ -210,7 +239,6 @@ always_ff @(posedge clk) begin
                     o_write_address <= i_rd_id;
                     o_write_data <= reg_data;
                 end
-                o_stall <= 1'b0;
                 lsu_state <= READY;
             end
         endcase

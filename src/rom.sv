@@ -21,8 +21,11 @@ module rom(
 
     // Compute the word address
     logic [$clog2(SIZE)-1:0] word_address;
-    assign word_address = wishbone.address[15:2];
+    //assign word_address = wishbone.address[15:2];
 
+    always_comb begin
+        word_address = wishbone.address[15:2];
+    end
 
     typedef enum logic [1:0] {
         IDLE,          // 2'b00

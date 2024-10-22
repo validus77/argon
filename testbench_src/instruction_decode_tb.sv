@@ -99,8 +99,10 @@ module instruction_decode_tb;
         // Wait for a short time to observe initial state
         #10;
 
+        //ff010113
+        test_instruction(32'hff010113, 32'h00000000, 32'd5, 32'd10, "UNK");
         // Test R-type ADD instruction
-        test_instruction(32'b0000000_00010_00001_000_00011_0110011, 32'h00000000, 32'd5, 32'd10, "R-type ADD");
+        test_instruction(32'b0000000_00010_00001_000_00011_0110011, 32'h00000000, 32'd5, 32'h80010000, "R-type ADD");
 
         // Test I-type ADDI instruction
         test_instruction(32'b000000000101_00001_000_00011_0010011, 32'h00000004, 32'd15, 32'd0, "I-type ADDI");

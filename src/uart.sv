@@ -10,7 +10,7 @@ module uart_rx(
     );
     
     localparam CLK_FREQ = 50000000;
-    localparam BAUD_RATE = 9600;
+    localparam BAUD_RATE = 115200;
     localparam integer CYCLES_PER_BIT = CLK_FREQ / BAUD_RATE;
     
     typedef enum logic [1:0] {
@@ -116,7 +116,7 @@ module uart_tx (
     output logic         o_tx
 );
     localparam CLK_FREQ = 50000000;
-    localparam BAUD_RATE = 9600;
+    localparam BAUD_RATE = 115200;
     localparam integer CYCLES_PER_BIT = CLK_FREQ / BAUD_RATE;
     
     typedef enum logic [1:0] {
@@ -299,6 +299,7 @@ module uart_wishbone (
                 tx_start <= tx_start; // keep tx_start high waiting for ready
              end else if (tx_start && tx_ready) begin
                 tx_start <= 1'b0; // byte sent, set start low again
+                tx_data <= 8'd0;
              end
         end
     end

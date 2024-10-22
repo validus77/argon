@@ -12,7 +12,7 @@ module ram (
 
     // Compute the word address
     logic [$clog2(SIZE)-1:0] word_address;
-    assign word_address = wishbone.address[15:2];
+    //assign word_address = wishbone.address[15:2];
 
     typedef enum logic [1:0] {
         IDLE,          // 2'b00
@@ -30,6 +30,7 @@ module ram (
     logic [31:0] temp_data;
 
     always_comb begin
+        word_address =  wishbone.address[15:2];
         // Generate write mask based on select
         write_mask = (wishbone.select[3] ? 32'hFF000000 : 32'h00000000) |
                      (wishbone.select[2] ? 32'h00FF0000 : 32'h00000000) |

@@ -4,7 +4,7 @@ module register_file (
 
     input  logic        i_write_enable,        
     input  logic [4:0]  i_write_address,        
-    input  logic [31:0] i_write_data,      
+    input  logic [31:0] i_write_data,    
 
     input  logic [4:0]  i_read_address_1,      
     output logic [31:0] o_read_data_1,      

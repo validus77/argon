@@ -66,11 +66,11 @@ always_comb begin
     funct3 = i_instruction[14:12];
     funct7 = i_instruction[31:25];
 
-    Uimm = {    i_instruction[31],   i_instruction[30:12], {12{1'b0}}};
-    Iimm = {{21{i_instruction[31]}}, i_instruction[30:20]};
-    Simm = {{21{i_instruction[31]}}, i_instruction[30:25],i_instruction[11:7]};
-    Bimm = {{20{i_instruction[31]}}, i_instruction[7],i_instruction[30:25],i_instruction[11:8],1'b0};
-    Jimm = {{12{i_instruction[31]}}, i_instruction[19:12],i_instruction[20],i_instruction[30:21],1'b0};
+    Uimm={    i_instruction[31],   i_instruction[30:12], {12{1'b0}}};
+    Iimm={{21{i_instruction[31]}}, i_instruction[30:20]};
+    Simm={{21{i_instruction[31]}}, i_instruction[30:25],i_instruction[11:7]};
+    Bimm={{20{i_instruction[31]}}, i_instruction[7],i_instruction[30:25],i_instruction[11:8],1'b0};
+    Jimm={{12{i_instruction[31]}}, i_instruction[19:12],i_instruction[20],i_instruction[30:21],1'b0};
 
     o_is_reg_write = 1'b0;
     o_is_load = 1'b0;
@@ -87,14 +87,14 @@ always_comb begin
 
     case (opcode)
         OPCODE_RTYPE: begin  // rd <- rs1 OP rs2 
-            o_alu_opcode = alu_opcode_t'({funct3, funct7[5]});
+            o_alu_opcode = alu_opcode_t'({funct7[5], funct3});
             o_alu_op1 = i_rs1_data;
             o_alu_op2 = i_rs2_data;
             o_is_reg_write = 1'b1;
         end
 
         OPCODE_ITYPE: begin  // rd <- rs1 OP Iimm
-            o_alu_opcode = alu_opcode_t'({funct3, funct7[5]});
+            o_alu_opcode = alu_opcode_t'({1'b0, funct3});
             o_alu_op1 = i_rs1_data;
             o_alu_op2 = Iimm;
             o_is_reg_write = 1'b1;

@@ -34,7 +34,7 @@ riscv64-unknown-elf-objcopy -O binary "$output_file" "$temp_bin_file"
 xxd -p "$temp_bin_file" > "${output_file}.hex"
 ../build/format_hex.py "${output_file}.hex"
 #clean up 
-rm -f "$output_file"
+#rm -f "$output_file"
 rm -f "$temp_bin_file"
 
 # Notify user

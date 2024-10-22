@@ -3,11 +3,8 @@ module argon_riscv_cpu(
         input logic         clk,
         input logic         reset,
         wishbone_if.master  if_wishbone_master,
-        wishbone_if.master  lsu_wishbone_master,
-        output logic [7:0] debug_leds 
+        wishbone_if.master  lsu_wishbone_master
     );
-
-    // Internal Signals
 
     // EXE -> IF
     logic           branch_enable;
@@ -60,7 +57,6 @@ module argon_riscv_cpu(
     logic [31:0]    ex_mem_data;
     logic [31:0]    ex_reg_data;
     logic [2:0]     ex_load_store_type;
-
 
     instruction_fetch ins_f(
         .clk(clk),
@@ -152,19 +148,5 @@ module argon_riscv_cpu(
         .i_read_address_2(rs2_id),       
         .o_read_data_2(rs2_data)     
     );
-    
-    always_comb begin
-        debug_leds = 8'b11111111;
-        
-        debug_leds[0] = ~stall;
-        debug_leds[1] = ~is_load;
-        debug_leds[2] = ~is_store;
-        debug_leds[3] = ~is_jump;
-        debug_leds[4] = ~is_branch;
-        debug_leds[5] = ~ex_is_mem_read;
-        debug_leds[6] = ~ex_is_mem_write;
-        
-
-    end
 
 endmodule

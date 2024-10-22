@@ -57,6 +57,15 @@ module ram_tb;
         wishbone_m.sim_read(32'h00000000,, read_data);
         #20;
         $display("READ(h00000256): 0x%0h, expect 0xCAFE1234", read_data);
+        
+        // WTIRE data to the RAM
+        wishbone_m.sim_write(32'h00000fdc,, 32'hA00000210);
+        #20;
+        wishbone_m.sim_read(32'h00000fdc,, read_data);
+        #20;
+        $display("READ(h00000fdc): 0x%0h, expect 0xa0000210", read_data);
+
+        
         $finish;
     end
 

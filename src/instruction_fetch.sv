@@ -29,7 +29,7 @@ always_ff @(posedge clk) begin
     if (reset) begin
         o_pc <= 32'd0;
         o_instruction <= 32'd0;
-        o_instruction_valid <= 1'b0;
+        o_instruction_valid <= 1'b0; 
         current_pc <= 32'd0;
         wishbone_bus.strobe <= 1'b0;
         wishbone_bus.cycle <= 1'b0;
@@ -64,6 +64,7 @@ always_ff @(posedge clk) begin
                 bus_state <= READY;
             end else begin
                 o_instruction_valid <= 1'b0;
+                o_instruction <= 32'd0; 
                 wishbone_bus.address <= current_pc;
                 o_pc <= current_pc;
                 wishbone_bus.strobe <= 1'b1;
@@ -77,7 +78,8 @@ always_ff @(posedge clk) begin
 end
 
 always_comb begin
-    if(i_branch_enable == 1'b1) begin
+    next_pc = 32'd0;
+    if(i_branch_enable == 1'b1 && o_instruction_valid == 1'b1) begin
         next_pc = i_branch_address;
     end else begin
         next_pc = current_pc + 4;

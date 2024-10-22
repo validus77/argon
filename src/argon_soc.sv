@@ -10,16 +10,13 @@ module argon_soc (
     input logic sys_rst_n,
     // UART signals
     input logic uart_rx,
-    output logic uart_tx,
-    //debuging
-    output logic [1:0] leds,
-    output logic [7:0] pmod_a
+    output logic uart_tx
 );
 
     // Internal Signals
     wishbone_if if_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
     wishbone_if lsu_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
-    //wishbone_if rom_wishbone_slave(.clk(sys_clk), .rst(~sys_rst_n));
+    wishbone_if rom_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
     wishbone_if ram_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
     wishbone_if uart_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
 
@@ -27,14 +24,13 @@ module argon_soc (
         .clk(sys_clk),
         .reset(~sys_rst_n),
         .if_wishbone_master(if_wishbone.master),
-        .lsu_wishbone_master(lsu_wishbone.master),
-        .debug_leds(pmod_a)
+        .lsu_wishbone_master(lsu_wishbone.master)
     );
 
     rom instruction_memory(
         .clk(sys_clk),
         .reset(~sys_rst_n),
-        .wishbone(if_wishbone.slave)
+        .wishbone(rom_wishbone.slave)
     );
 
     ram data_memory(
@@ -54,22 +50,19 @@ module argon_soc (
     //wishbone_crossbar wishbone_switch(
     //    .clk(sys_clk),
     //    .reset(~sys_rst_n),
-    //    .wb_m0(if_wishbone_master.slave),
-    //    .wb_m1(lsu_wishbone_master.slave),
-    //    .wb_rom(rom_wishbone_slave.master),
-    //    .wb_ram(ram_wishbone_slave.master),
-    //    .wb_uart(uart_wishbone_slave.master)
+    //    .wb_m0(if_wishbone.slave),
+    //    .wb_m1(lsu_wishbone.slave),
+    //    .wb_rom(rom_wishbone.master),
+    //    .wb_ram(ram_wishbone.master),
+    //    .wb_uart(uart_wishbone.master)
     //);
     
     simple_wishbone_switch wishbone_switch (
-        .wb_m(lsu_wishbone.slave),
+        .wb_lsu(lsu_wishbone.slave),
+        .wb_if(if_wishbone.slave),
         .wb_ram(ram_wishbone.master),
+        .wb_rom(rom_wishbone.master),
         .wb_uart(uart_wishbone.master)
     );
-    
-    always_comb begin
-        leds = 2'b11;
-        leds[0] = ~if_wishbone.ack;
-        leds[1] = ~uart_wishbone.ack;
-    end
+
 endmodule

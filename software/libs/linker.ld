@@ -1,34 +1,47 @@
 OUTPUT_ARCH(riscv)
 ENTRY(_start)
 
-MEMORY {
-    ROM (rx)  : ORIGIN = 0x00000000, LENGTH = 16K  /* Program ROM (Flash) */
-    RAM (rwx) : ORIGIN = 0x80000000, LENGTH = 32K  /* Data RAM */
-    UART (rw) : ORIGIN = 0x10000000, LENGTH = 4K   /* Memory-mapped UART */
+MEMORY
+{
+  ROM (rx) : ORIGIN = 0x00000000, LENGTH = 4k
+  RAM (rw) : ORIGIN = 0x80000000, LENGTH = 4k
 }
+
+ROM_START_ADDRESS   = 0x00000000;        /* Must be the same as the MEMORY region ROM ORIGIN. */
+ROM_SIZE            = 4k;                /* Must match the MEMORY region ROM LENGTH. */
+
+RAM_START_ADDRESS   = 0x80000000;        /* Must be the same as the MEMORY region RAM ORIGIN. */
+RAM_SIZE            = 4k;                /* Must match the MEMORY region RAM LENGTH. */
+
+STACK_SIZE          = 4k;                /* Needs to be calculated for your application. */
+HEAP_SIZE           = 0;                 /* Needs to be calculated for your application. */
 
 SECTIONS
 {
-    /* Code (text) section starts at 0x00000000 in ROM */
-    . = ORIGIN(ROM);
-    
-    .text : {
-        *(.text)        /* All .text sections (code) */
-        *(.rodata)      /* Read-only data (if any) */
-    } > ROM
+  .text : ALIGN(0x10) 
+  { 
+    *(.text*)
+    PROVIDE(__global_pointer$ = .); 
+  } > ROM
 
-    /* Data section starts at 0x80000000 in RAM */
-    . = ORIGIN(RAM);
+  .rodata : ALIGN(0x10)
+  {
+    *(.rodata*)
+  } > ROM
 
-    .data : {
-        *(.data)        /* All .data sections (initialized data) */
-    } > RAM AT > ROM        /* Place .data in RAM, but load it in ROM */
+  .data : ALIGN(0x10)
+  {
+    *(.data*)
+  } > RAM AT > ROM
 
-    .bss : {
-        *(.bss)             /* Place all .bss sections here (uninitialized variables) */
-    } > RAM                 /* Place .bss in RAM */
+  .bss : ALIGN(0x10)
+  { 
+    *(.bss*)
+    *(COMMON)
+    PROVIDE(__stack_top$ = . + LENGTH(RAM) - STACK_SIZE);
+  } > RAM
 
-    .uart : {
-        KEEP(*(.uart))      /* Ensure the UART-related variables are kept */
-    } > UART                /* Place UART control registers in memory-mapped region */
+  /* Initialize stack pointer to top of RAM */
+  . = ORIGIN(RAM) + LENGTH(RAM) - STACK_SIZE;
+  __stack_top$ = .;
 }
