@@ -3,8 +3,8 @@ ENTRY(_start)
 
 MEMORY
 {
-  ROM (rx) : ORIGIN = 0x00000000, LENGTH = 4k
-  RAM (rw) : ORIGIN = 0x80000000, LENGTH = 4k
+  ROM (rx) : ORIGIN = 0x00000000, LENGTH = 16k
+  RAM (rw) : ORIGIN = 0x80000000, LENGTH = 32k
 }
 
 ROM_START_ADDRESS   = 0x00000000;        /* Must be the same as the MEMORY region ROM ORIGIN. */

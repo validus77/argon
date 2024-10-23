@@ -25,6 +25,9 @@ The baisc CPU fully systhisises and works with IO only provided by the UART inte
 
 ![image ScreenShot](./Docs/Images/working.jpg)
 
+After the initial excitement of seeing it display text on the screen and a bit more debugging, I got it to pass a set of tests I wrote that exercise all the basic RV32I instructions.
+![image ScreenShot](./Docs/Images/pass_tests.jpg)
+
 There is test benches for all the indvidual modules but no system wide test bench, I endded up debuggin that by inserting ILA all over the place. 
 And because every one like picures here is some schamitics of the CPU and the SoC 
 ![image CPU](./Docs/Images/CPU.jpg)
