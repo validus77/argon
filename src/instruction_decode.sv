@@ -12,6 +12,10 @@ module instruction_decode (
     input logic [31:0] i_rs1_data,
     input logic [31:0] i_rs2_data,
 
+    // ID <-> CSR
+    output logic [11:0] o_csr_id,
+    input logic [31:0] i_csr_data,
+
 
     // ID -> EXE
     output alu_opcode_t o_alu_opcode,
@@ -41,7 +45,7 @@ typedef enum logic [6:0] {
     OPCODE_AUIPC  = 7'b0010111,
     OPCODE_JAL    = 7'b1101111,
     OPCODE_JALR   = 7'b1100111,
-    OPCODE_SPECAL = 7'b1110011
+    OPCODE_SYSTEM = 7'b1110011
 } opcode_t;
 
 // This module is all combinational logic
@@ -158,6 +162,20 @@ always_comb begin
             o_is_reg_write = 1'b1;
             o_is_jump = 1'b1;
         end
+
+        OPCODE_SYSTEM: begin
+            // FOR NOW ONLY SUPPORT ONE INSTRUCTION CSRRS (b010), and only when rs is x0
+            // basicly CSR is readonly at this point
+            // very limited functionaly for reading the cycel and instr counter 
+            if(funct3 == 3'b010 && o_rs1_id == 5'd0) begin
+                o_csr_id <= i_instruction[31:20];
+                o_alu_opcode = ALU_ADD;
+                o_alu_op1 = i_csr_data;
+                o_alu_op2 = 32'd0; 
+                o_is_reg_write = 1'b1;
+            end   
+        end
+        
         default: begin
         end
 

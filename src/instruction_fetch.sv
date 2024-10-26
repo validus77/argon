@@ -25,6 +25,11 @@ logic [31:0] current_pc;
 logic [31:0] next_pc;
 mem_state_t bus_state;
 
+//Pipeline regesters 
+logic       IF_branch_enable;
+logic[32:0] IF_branch_address;
+logic       IF_stall;  // DO we need this?
+
 always_ff @(posedge clk) begin
     if (reset) begin
         o_pc <= 32'd0;
@@ -38,7 +43,14 @@ always_ff @(posedge clk) begin
         wishbone_bus.write_enable<= 1'b0;
         wishbone_bus.data_in <= 32'd0;
         bus_state <= READY;
+
+        IF_branch_enable <= 1'b0;
+        IF_branch_address <= 32'd0;
+        IF_stall <= 1'b0;
     end else begin
+        IF_branch_enable <= i_branch_enable;
+        IF_branch_address <= i_branch_address;
+        IF_stall <= i_stall;
         // LOAD instruction
         case (bus_state)
         READY: begin
