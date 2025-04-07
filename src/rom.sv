@@ -11,7 +11,7 @@ module rom(
     (* rom_style = "block" *) reg [31:0] memory [0:SIZE-1];
     
     initial begin
-        $readmemh("D:/Dev/Dump/hello_world.hex", memory);  // For simulation or FPGA memory init
+        $readmemh("../bin/program.hex", memory);  // For simulation or FPGA memory init
         #10;  // Wait for some time to ensure memory is loaded
         $display("Memory[0]: %h", memory[0]);
         $display("Memory[1]: %h", memory[1]);

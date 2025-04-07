@@ -20,6 +20,10 @@ module argon_riscv_cpu(
     // IF -> LSU
     logic           instruction_valid;
 
+    // ID <-> CSR
+    logic [11:0] csr_id;
+    logic [31:0] csr_data;
+
     // ID -> RegFile
     logic [4:0]     rs1_id;
     logic [4:0]     rs2_id;
@@ -77,6 +81,8 @@ module argon_riscv_cpu(
         .o_rs2_id(rs2_id),
         .i_rs1_data(rs1_data),
         .i_rs2_data(rs2_data),
+        .o_csr_id(csr_id),
+        .i_csr_data(csr_data),
         .o_alu_opcode(alu_opcode),
         .o_alu_op1(alu_op1),
         .o_alu_op2(alu_op2),
@@ -148,5 +154,14 @@ module argon_riscv_cpu(
         .i_read_address_2(rs2_id),       
         .o_read_data_2(rs2_data)     
     );
+
+    csr csr(
+        .clk(clk),
+        .reset(resrt),
+        .i_instruction_valid(instruction_valid),
+        .i_csr_id(csr_id),
+        .o_csr_data(csr_data)
+    );
+
 
 endmodule

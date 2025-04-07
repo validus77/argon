@@ -1,99 +1,106 @@
 #include "../libs/uart.h"
+#include <stdbool.h>
+#include <stddef.h>
 
-#define WIDTH 20
-#define HEIGHT 20
-#define GENERATIONS 100
+#define ROWS 20
+#define COLS 40
+#define GENERATIONS 1000
+#define DELAY 100000
 
-// Define the grid
-int grid[HEIGHT][WIDTH];
-int next_grid[HEIGHT][WIDTH];
-
-// Initialize the grid with a simple glider pattern
-void initialize_grid() {
-    // Clear the grid
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-            grid[y][x] = 0;
-        }
-    }
-
-    // Add a glider pattern
-    grid[1][2] = 1;
-    grid[2][3] = 1;
-    grid[3][1] = 1;
-    grid[3][2] = 1;
-    grid[3][3] = 1;
+static unsigned long long seed = 42;
+unsigned int rand(void) {
+    seed = seed * 6364136223846793005ULL + 1;
+    return (unsigned int)(seed >> 32);
 }
 
-// Print the grid to UART
-void print_grid() {
-    uart_printf("\033[H");  // Move cursor to the top-left
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-            if (grid[y][x]) {
-                uart_putchar('#');  // Alive cell
-            } else {
-                uart_putchar(' ');  // Dead cell
+void *memset(void *s, int c, size_t n) {
+    unsigned char *p = s;
+    while (n--) {
+        *p++ = (unsigned char)c;
+    }
+    return s;
+}
+
+// Simple busy-wait delay
+void delay(unsigned int count) {
+    volatile unsigned int i;
+    for (i = 0; i < count; i++);
+}
+
+// Print the grid; using ANSI escape to move cursor home if supported
+void print_grid(bool grid[ROWS][COLS]) {
+    uart_printf("\033[H");  // Move cursor to top-left
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            uart_printf("%c", grid[i][j] ? '#' : ' ');
+        }
+        uart_printf("\n");
+    }
+}
+
+// Copy one grid into another
+void copy_grid(bool src[ROWS][COLS], bool dest[ROWS][COLS]) {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            dest[i][j] = src[i][j];
+        }
+    }
+}
+
+int main(void) {
+    bool grid[ROWS][COLS] = {0};
+    bool new_grid[ROWS][COLS] = {0};
+
+
+    // Initialize with a glider pattern
+    grid[1][2] = true;
+    grid[2][3] = true;
+    grid[3][1] = true;
+    grid[3][2] = true;
+    grid[3][3] = true;
+
+    // Randomly initialize the grid.
+    // For example, 30% chance for each cell to be alive.
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            if ((rand() % 10) < 3) {
+                grid[i][j] = true;
             }
         }
-        uart_putchar('\n');
-    }
-}
-
-// Count the number of live neighbors for a cell
-int count_neighbors(int y, int x) {
-    int count = 0;
-    for (int dy = -1; dy <= 1; dy++) {
-        for (int dx = -1; dx <= 1; dx++) {
-            if (dy == 0 && dx == 0) continue;  // Skip the cell itself
-            int ny = (y + dy + HEIGHT) % HEIGHT;  // Wrap around vertically
-            int nx = (x + dx + WIDTH) % WIDTH;    // Wrap around horizontally
-            count += grid[ny][nx];
-        }
-    }
-    return count;
-}
-
-// Update the grid based on the Game of Life rules
-void update_grid() {
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-            int neighbors = count_neighbors(y, x);
-
-            // Apply the rules of Conway's Game of Life
-            if (grid[y][x] == 1) {
-                // Cell is alive
-                next_grid[y][x] = (neighbors == 2 || neighbors == 3) ? 1 : 0;
-            } else {
-                // Cell is dead
-                next_grid[y][x] = (neighbors == 3) ? 1 : 0;
-            }
-        }
     }
 
-    // Copy next_grid to grid
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-            grid[y][x] = next_grid[y][x];
-        }
-    }
-}
+    // Clear the screen before starting (if terminal supports ANSI)
+    uart_printf("\033[2J");
 
-int main() {
-    // Initialize the grid with a starting pattern
-    initialize_grid();
-
-    // Run the simulation for a certain number of generations
+    // Main simulation loop
     for (int gen = 0; gen < GENERATIONS; gen++) {
-        print_grid();       // Print the current grid
-        update_grid();      // Update the grid
-        uart_printf("\n");  // Add a line break between generations
-
-        // Simple delay to slow down the simulation
-        for (volatile int i = 0; i < 1000000; i++);
-
-        uart_printf("Generation %d\n", gen + 1);
+        print_grid(grid);
+        // Compute next generation
+        for (int i = 0; i < ROWS; i++) {
+            for (int j = 0; j < COLS; j++) {
+                int live_neighbors = 0;
+                for (int di = -1; di <= 1; di++) {
+                    for (int dj = -1; dj <= 1; dj++) {
+                        if (di == 0 && dj == 0)
+                            continue;
+                        int ni = i + di;
+                        int nj = j + dj;
+                        if (ni >= 0 && ni < ROWS && nj >= 0 && nj < COLS && grid[ni][nj])
+                            live_neighbors++;
+                    }
+                }
+                if (grid[i][j]) {
+                    // Cell survives with 2 or 3 neighbors
+                    new_grid[i][j] = (live_neighbors == 2 || live_neighbors == 3);
+                } else {
+                    // Cell becomes live with exactly 3 neighbors
+                    new_grid[i][j] = (live_neighbors == 3);
+                }
+            }
+        }
+        // Update grid state
+        copy_grid(new_grid, grid);
+        delay(DELAY);
     }
-
     return 0;
 }

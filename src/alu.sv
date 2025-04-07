@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 `include "alu.svh"
+
 module alu (
     input logic [31:0]  i_op1,
     input logic [31:0]  i_op2,

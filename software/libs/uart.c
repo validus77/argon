@@ -81,13 +81,38 @@ void uart_putint(int num) {
     }
 }
 
+void uart_putull(unsigned long long x) {
+    char buf[21];  // Maximum 20 digits for 64-bit numbers + null terminator (not used here)
+    int i = 0;
+    if (x == 0) {
+        uart_putchar('0');
+        return;
+    }
+    while (x > 0) {
+        buf[i++] = '0' + (x % 10);
+        x /= 10;
+    }
+    // The digits are in reverse order, print them in correct order
+    while (i > 0) {
+        uart_putchar(buf[--i]);
+    }
+}
+
 void uart_printf(const char *format, ...) {
     va_list args;
     va_start(args, format);
 
     while (*format) {
         if (*format == '%') {
+            
             format++;  // Move past '%'
+            if (*format == 'l' && *(format + 1) == 'l' && *(format + 2) == 'u') {
+                format += 3;  // Skip "llu"
+                unsigned long long ull_val = va_arg(args, unsigned long long);
+                uart_putull(ull_val);
+                continue;
+            }
+
             switch (*format) {
                 case 'd': {  // Integer
                     int num = va_arg(args, int);

@@ -6,7 +6,7 @@
 */
 
 module argon_soc (
-    input logic sys_clk,
+    input logic sysclk_50,
     input logic sys_rst_n,
     // UART signals
     input logic uart_rx,
@@ -14,33 +14,33 @@ module argon_soc (
 );
 
     // Internal Signals
-    wishbone_if if_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
-    wishbone_if lsu_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
-    wishbone_if rom_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
-    wishbone_if ram_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
-    wishbone_if uart_wishbone(.clk(sys_clk), .rst(~sys_rst_n));
+    wishbone_if if_wishbone(.clk(sysclk_50), .rst(~sys_rst_n));
+    wishbone_if lsu_wishbone(.clk(sysclk_50), .rst(~sys_rst_n));
+    wishbone_if rom_wishbone(.clk(sysclk_50), .rst(~sys_rst_n));
+    wishbone_if ram_wishbone(.clk(sysclk_50), .rst(~sys_rst_n));
+    wishbone_if uart_wishbone(.clk(sysclk_50), .rst(~sys_rst_n));
 
     argon_riscv_cpu cpu(
-        .clk(sys_clk),
+        .clk(sysclk_50),
         .reset(~sys_rst_n),
         .if_wishbone_master(if_wishbone.master),
         .lsu_wishbone_master(lsu_wishbone.master)
     );
 
     rom instruction_memory(
-        .clk(sys_clk),
+        .clk(sysclk_50),
         .reset(~sys_rst_n),
         .wishbone(rom_wishbone.slave)
     );
 
     ram data_memory(
-        .clk(sys_clk),
+        .clk(sysclk_50),
         .reset(~sys_rst_n),
         .wishbone(ram_wishbone.slave)
     );
 
     uart_wishbone uart(
-        .clk(sys_clk),
+        .clk(sysclk_50),
         .reset(~sys_rst_n),
         .wishbone(uart_wishbone.slave),
         .i_rx(uart_rx),

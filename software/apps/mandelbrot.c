@@ -1,67 +1,43 @@
 #include "../libs/uart.h"
 
-#define W 46
-#define H 46
+#define WIDTH 80
+#define HEIGHT 24
+#define MAX_ITER 100
 
-#define mandel_shift 10
-#define mandel_mul (1 << mandel_shift)
-#define xmin -2*mandel_mul
-#define ymax  2*mandel_mul
-#define ymin -2*mandel_mul
-#define xmax  2*mandel_mul
-#define dx (xmax-xmin)/H
-#define dy (ymax-ymin)/H
-#define norm_max (4 << mandel_shift)
-
-// ASCII characters for different iterations
-const char ascii_map[21] = {
-    ' ', '.', ':', '-', '=', '+', '*', '#', '%', '@',
-    ' ', '.', ':', '-', '=', '+', '*', '#', '%', '@',
-    '@'  // Last color for full iteration
-};
-
-int main() {
-    int frame = 0;
-    for (;;) {
-        uart_printf("\033[H");  // Move cursor to top-left
-        int Ci = ymin;
-
-        for (int Y = 0; Y < H; ++Y) {
-            int Cr = xmin;
-
-            for (int X = 0; X < W; ++X) {
-                int Zr = Cr;
-                int Zi = Ci;
-                int iter = 20;
-
-                while (iter > 0) {
-                    int Zrr = (Zr * Zr) >> mandel_shift;
-                    int Zii = (Zi * Zi) >> mandel_shift;
-                    int Zri = (Zr * Zi) >> (mandel_shift - 1);
-
-                    Zr = Zrr - Zii + Cr;
-                    Zi = Zri + Ci;
-
-                    if (Zrr + Zii > norm_max) {
-                        break;
-                    }
-                    --iter;
-                }
-
-                // Use ASCII mapping for output
-                char symbol = ascii_map[(iter + frame) % 21];
-                uart_putchar(symbol);
-                uart_putchar(symbol);  // Double for better visibility
-
-                Cr += dx;
+int main(void) {
+    // Loop over each row of the display
+    for (int y = 0; y < HEIGHT; y++) {
+        char line[WIDTH + 1];  // Buffer for one line of output
+        // Loop over each column of the display
+        for (int x = 0; x < WIDTH; x++) {
+            // Map pixel coordinates to the complex plane.
+            // These constants define the region of the complex plane we are displaying.
+            double cx = (x - WIDTH / 2.0) * 3.5 / WIDTH - 0.7;
+            double cy = (y - HEIGHT / 2.0) * 2.0 / HEIGHT;
+            double zx = 0.0, zy = 0.0;
+            int iter;
+            // Iterate the Mandelbrot function: z = z^2 + c
+            for (iter = 0; iter < MAX_ITER; iter++) {
+                double temp = zx * zx - zy * zy + cx;
+                zy = 2.0 * zx * zy + cy;
+                zx = temp;
+                if (zx * zx + zy * zy > 4.0)
+                    break;
             }
-
-            Ci += dy;
-            uart_putchar('\n');  // Move to next line
+            // Select a character based on the number of iterations
+            char ch;
+            if (iter == MAX_ITER)
+                ch = '#';  // Likely in the Mandelbrot set
+            else {
+                // Use a simple palette to create a gradient effect
+                const char *palette = " .:-=+*#%@";
+                int index = (iter * 9) / MAX_ITER;  // Scale iteration count to palette index (0-9)
+                ch = palette[index];
+            }
+            line[x] = ch;
         }
-
-        ++frame;
+        line[WIDTH] = '\0';  // Null-terminate the line
+        uart_printf("%s\n", line);
     }
-
     return 0;
 }
